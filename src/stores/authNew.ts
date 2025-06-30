@@ -7,7 +7,6 @@ export const useAuthStore = defineStore('auth', () => {
   const currentUser = ref<User | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
-  const initialized = ref(false)
   
   const isAuthenticated = computed(() => !!currentUser.value && apiService.isAuthenticated())
 
@@ -36,26 +35,6 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
   }
 
-  const fetchCurrentUser = async () => {
-    try {
-      if (!apiService.isAuthenticated()) return
-      
-      const user = await apiService.getProfile()
-      // Ajout des propriétés calculées pour compatibilité
-      if (user) {
-        user.name = `${user.firstName} ${user.lastName}`
-        if (!user.avatar) {
-          user.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=6366f1&color=fff`
-        }
-      }
-      currentUser.value = user
-    } catch (err: any) {
-      console.error('Erreur lors de la récupération de l\'utilisateur:', err)
-      // Si l'utilisateur n'est pas trouvé, on le déconnecte
-      logout()
-    }
-  }
-
   const register = async (userData: {
     firstName: string
     lastName: string
@@ -79,6 +58,26 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const fetchCurrentUser = async () => {
+    try {
+      if (!apiService.isAuthenticated()) return
+      
+      const user = await apiService.getProfile()
+      // Ajout des propriétés calculées pour compatibilité
+      if (user) {
+        user.name = `${user.firstName} ${user.lastName}`
+        if (!user.avatar) {
+          user.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=6366f1&color=fff`
+        }
+      }
+      currentUser.value = user
+    } catch (err: any) {
+      console.error('Erreur lors de la récupération de l\'utilisateur:', err)
+      // Si l'utilisateur n'est pas trouvé, on le déconnecte
+      logout()
+    }
+  }
+
   const updateProfile = async (userData: Partial<User>) => {
     try {
       loading.value = true
@@ -95,16 +94,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Initialize auth state from localStorage
   const initAuth = async () => {
-    try {
-      loading.value = true
-      if (apiService.isAuthenticated()) {
-        await fetchCurrentUser()
-      }
-    } catch (error) {
-      console.error('Erreur lors de l\'initialisation de l\'authentification:', error)
-    } finally {
-      loading.value = false
-      initialized.value = true
+    if (apiService.isAuthenticated()) {
+      await fetchCurrentUser()
     }
   }
 
@@ -112,7 +103,6 @@ export const useAuthStore = defineStore('auth', () => {
     currentUser,
     loading,
     error,
-    initialized,
     isAuthenticated,
     login,
     register,
